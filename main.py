@@ -7,7 +7,7 @@ from random import randint, choice
 from googletrans import Translator
 from replit import db
 from cogs import update
-from datetime import datetime,timedelta
+from datetime import datetime,timedelta,timezone,tzinfo
 import pytz
 from math import floor
 
@@ -59,7 +59,10 @@ async def help(ctx):
     embed2.add_field(
         name='List of commands (cont.)',
         value=f"`{ctxprefix}coinflip <bet> (alias: cf)` - flips a coin. guess correctly to win double the bet. guess wrong and you lose the bet.\
-        \n`{ctxprefix}now` - shows the date and time."
+        \n`{ctxprefix}now` - shows the date and time.\
+        \n`{ctxprefix}kiss <mention target>` - kiss someone!\
+        \n`{ctxprefix}hug <mention target>` - hug someone!\
+        \n`{ctxprefix}kill <mention target>` - kill someone!"
     )
     await ctx.send(embed=embed1)
     await ctx.send(embed=embed2)
@@ -70,6 +73,8 @@ async def ping(ctx):
 
 @client.command(aliases=['bj'])
 async def blackjack(ctx, bet):
+    #await ctx.send("This function has been temporarily disabled.")
+    #return
     ctxprefix=str(ctx.message.content)[0:2]
     placeholder=0
     zero=False
@@ -356,12 +361,15 @@ async def translate(ctx,lang,*msg):
 @tasks.loop(seconds=1.0)
 async def remove_negative():
     for i in db:
-        points=db[i]["points"]
-        if points<0:
-            update(i, "points", 0)
+        if db[i]["type"]=="Profile":
+            points=db[i]["points"]
+            if points<0:
+                update(i, "points", 0)
 
 @client.command()
 async def create(ctx):
+    #await ctx.send("This function has been temporarily disabled.")
+    #return
     author_id=str(ctx.author.id)
     try:
         points=db[author_id]["points"]
@@ -369,6 +377,7 @@ async def create(ctx):
     except KeyError:
         await ctx.send('__**Creating profile...**__')
         db[author_id]={
+            "type": "Profile",
             "name": ctx.author.name,
             "points": 0
         }
@@ -378,6 +387,7 @@ async def create(ctx):
 async def list_db(ctx):
     if str(ctx.author.id) in admin:
         for i in db:
+            await ctx.send(i)
             await ctx.send(db[i])
 
 @client.command()
@@ -389,6 +399,8 @@ async def clear_db(ctx):
 
 @client.command(aliases=['p'])
 async def profile(ctx):
+    #await ctx.send("This function has been temporarily disabled.")
+    #return
     author_id=str(ctx.author.id)
     ctxprefix=str(ctx.message.content)[0:2]
     try:
@@ -401,12 +413,15 @@ async def profile(ctx):
 
 @client.command(aliases=['lb'])
 async def leaderboard(ctx):
+    #await ctx.send("This function has been temporarily disabled.")
+    #return
     names=[]
     points=[]
     count=0
     for i in db:
-        names.append(db[i]["name"])
-        points.append(db[i]["points"])
+        if db[i]["type"]=="Profile":
+            names.append(db[i]["name"])
+            points.append(db[i]["points"])
     embed=discord.Embed(title='Leaderboard')
     for i in range(len(names)):
 	    count+=1
@@ -420,6 +435,8 @@ async def leaderboard(ctx):
 
 @client.command()
 async def dice(ctx,bet):
+    #await ctx.send("This function has been temporarily disabled.")
+    #return
     author_id=str(ctx.author.id)
     ctxprefix=str(ctx.message.content)[0:2]
     try:
@@ -483,6 +500,9 @@ async def add(ctx,id,amt):
 
 @client.command()
 async def send(ctx, *text):
+#    if str(ctx.author.id)=="716127371152851015":
+#        await ctx.send("Thou hast been banned from using this command. ")
+#        return 
     text=' '.join(text)
     await ctx.send(text)
     await ctx.message.delete()
@@ -494,11 +514,13 @@ async def invite(ctx):
     
 @client.command()
 async def magic_8ball(ctx):
-    responses=["Yes.", "No.", "Are you dumb???", "No shit...", "When you grow a braincell, yes.", "Bruh.", "No you idiot.", "Only God can help you there.", "Do dogs talk?", "Obviously... even a blind man can see it.", "Yea sure.",  "Stop asking me stupid questions.", "I doubt it.", "As surely as 1+1=3", "This ain't worth the processor cycles.", "Uh whatever."]
+    responses=["Yes.", "No.", "Are you dumb???", "No shit...", "When you grow a braincell, yes.", "Bruh.", "No you idiot.", "Only God can help you there.", "Do dogs talk?", "Obviously... even a blind man can see it.", "Yea sure.",  "Stop asking me stupid questions.", "I doubt it.", "As surely as 1+1=3", "This ain't worth the processor cycles.", "Uh whatever.", "Cock.", "Try again later."]
     await ctx.send(choice(responses))
 
 @client.command(aliases=["cf"])
 async def coinflip(ctx, bet):
+    #await ctx.send("This function has been temporarily disabled.")
+    #return
     def check(m):
         if m.author == ctx.author:
             return True
@@ -586,8 +608,9 @@ async def daily_interest():
     time_diff=(target_time-current_time).total_seconds()
     if time_diff<1 or time_diff>86399: 
         for i in db:
-            points=floor((db[i]["points"])*1.1)
-            update(i, "points", points)
+            if db[i]["type"]["Profile"]:
+                points=floor((db[i]["points"])*1.1)
+                update(i, "points", points)
 
 @client.command()
 async def addall(ctx, points):
@@ -596,8 +619,125 @@ async def addall(ctx, points):
         update(i, "points", db[i]["points"]+points)
     await ctx.send("FREE POINTS FOR EVERYONE!!!")
 
+@client.command()
+async def kiss(ctx, *user):
+    user=" ".join(user)
+    gifs=["https://media.giphy.com/media/QGc8RgRvMonFm/giphy.gif",  "https://media.giphy.com/media/nyGFcsP0kAobm/giphy.gif", "https://media.giphy.com/media/jR22gdcPiOLaE/giphy.gif", "https://media.giphy.com/media/FqBTvSNjNzeZG/giphy.gif", "https://media.giphy.com/media/bm2O3nXTcKJeU/giphy.gif", "https://media.giphy.com/media/zkppEMFvRX5FC/giphy.gif", "https://media.giphy.com/media/vUrwEOLtBUnJe/giphy.gif", "https://media.giphy.com/media/Gj8bn4pgTocog/giphy.gif"]
+    gif=choice(gifs)
+    embed=discord.Embed(
+        title="",
+        description=f"_{ctx.author.mention} kisses {user}_"
+    )
+    embed.set_image(url=gif)
+    await ctx.send(embed=embed)
+
+@client.command()
+async def hug(ctx, *user):
+    user=" ".join(user)
+    gifs=["https://media.giphy.com/media/od5H3PmEG5EVq/giphy.gif", "https://media.giphy.com/media/143v0Z4767T15e/giphy.gif", "https://media.giphy.com/media/PHZ7v9tfQu0o0/giphy.gif", "https://media.giphy.com/media/49mdjsMrH7oze/giphy.gif", "https://media.giphy.com/media/vVA8U5NnXpMXK/giphy-downsized-large.gif", "https://media.giphy.com/media/XngSZ7e6wBOBG/giphy.gif", "https://media.giphy.com/media/FuUFDCe51pDKo/giphy.gif", "https://cdn.weeb.sh/images/rJnKu_XwZ.gif"]
+    gif=choice(gifs)
+    embed=discord.Embed(
+        title="",
+        description=f"_{ctx.author.mention} hugs {user}_"
+    )
+    embed.set_image(url=gif)
+    await ctx.send(embed=embed)
+
+@client.command()
+async def kill(ctx, *user):
+    user=" ".join(user)
+    gifs=["https://media.giphy.com/media/11HeubLHnQJSAU/giphy.gif", "https://media.giphy.com/media/eLsxkwF5BRtlK/giphy.gif", "https://media.giphy.com/media/q0vzRkA3NNYVtvt8rn/giphy.gif", "https://media.giphy.com/media/5nzKr6nUZQi8thjcWf/giphy.gif", "https://media.giphy.com/media/yBeej2d9kB4FYXeg2Z/giphy.gif", "https://media.giphy.com/media/NuiEoMDbstN0J2KAiH/giphy.gif", "https://media.giphy.com/media/yo3TC0yeHd53G/giphy.gif", "https://media.giphy.com/media/8D1upwhhOTHo3UKhGy/giphy.gif"]
+    gif=choice(gifs)
+    embed=discord.Embed(
+        title="",
+        description=f"_{ctx.author.mention} kills {user}_"
+    )
+    embed.set_image(url=gif)
+    await ctx.send(embed=embed)
+
+@client.command()
+async def rng(ctx, start, stop):
+    start=int(start)
+    stop=int(stop)
+    number=randint(start,stop)
+    await ctx.send(number)
+
+@client.command()
+async def create_permreminder(ctx, *message):
+    def check(m):
+        if m.author == ctx.author:
+            return True
+        return False
+    message=" ".join(message)
+    await ctx.message.delete()
+    prompt=await ctx.send("Enter reminder time in HH:MM format:")
+    time = await client.wait_for('message', check=check)
+    await prompt.delete()
+    await time.delete()
+    time=str(time.content).split(":")
+    timenow=datetime.now()
+    day=timenow.day
+    month=timenow.month
+    year=timenow.year
+    hour=int(time[0])
+    minute=int(time[1])
+    date_time=datetime(year,month,day,hour,minute)
+    channelid=ctx.channel.id
+    try:
+        counter=db["counter"]
+    except KeyError:
+        db["counter"]={
+            "type": "counter",
+            "value": 1
+        }
+    counter=db["counter"]["value"]
+    db[counter]={
+            "type": "perm_reminder",
+            "channel": channelid,
+            "message": message,
+            "datetime": date_time.isoformat()
+        }
+    db["counter"]["value"]+=1
+    await ctx.send("done", delete_after=5.0)
+
+@client.command()
+async def clear_reminder(ctx, number):
+    del db[number]
+
+@client.command()
+async def remove(ctx, *item):
+    item=" ".join(item)
+    del db[item]
+
+@tasks.loop(seconds=2.0)
+async def check_reminders():
+    current_datetime=datetime.now()
+    for i in db:
+        if db[i]["type"]=="perm_reminder":
+            time_diff=(datetime.fromisoformat(db[i]["datetime"])-current_datetime).total_seconds()
+            time_diff-=28800
+            if time_diff<2 or time_diff>0:
+                channel = await client.fetch_channel(db[i]["channel"])
+                msg=db[i]["message"]
+                await channel.send(msg)
+                date_time=datetime.fromissoformat(db[i]["datetime"]) + timedelta(days=1)
+                db[i]["datetime"]=date_time.isoformat()
+
+@tasks.loop(seconds=2.0)
+async def gm():
+    current_datetime=datetime.now()
+    target_datetime=datetime(2022,6,27,6)
+    time_diff=(target_datetime-current_datetime).total_seconds()
+    time_diff-=28800
+    if time_diff<2 and time_diff>0:
+        channel = await client.fetch_channel(988493796025176126)
+        msg="@everyone Morning yall, Zephan here. Hope you guys had a nice sleep. ATB for school today! love yall (esp. isa) :heart:"
+        await channel.send(msg)
+
 
 remove_negative.start()  
 daily_interest.start()
+gm.start()
+check_reminders.start()
 keep_alive()
-client.run(my_secret)    
+client.run(my_secret)
